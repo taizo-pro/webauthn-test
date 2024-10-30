@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { authenticateAndDeriveKey } from './authentication';
 import { encryptData, decryptData } from './encryption';
+import { registerPasskey } from './registration';
 
 export default function Home() {
   const [status, setStatus] = useState('');
@@ -12,12 +13,21 @@ export default function Home() {
 
   const handleUnlock = async () => {
     const key = await authenticateAndDeriveKey();
-    console.log("🍣 ~ file: page.tsx:15 ~ handleUnlock ~ key:", key);
+    console.log("🔓 Unlock Key:", key);
     if (key) {
       setSymmetricKey(key);
       setStatus('ロックが解除されました。');
     } else {
       setStatus('認証に失敗しました。');
+    }
+  };
+
+  const handleRegister = async () => {
+    const success = await registerPasskey();
+    if (success) {
+      setStatus('パスキーが正常に登録されました。');
+    } else {
+      setStatus('パスキーの登録に失敗しました。');
     }
   };
 
@@ -60,20 +70,32 @@ export default function Home() {
 
   return (
     <div>
-      <h1>暗号化テスト</h1>
+      <h1>WebAuthn パスキー登録・認証</h1>
       <div>
         {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-        <button onClick={handleUnlock} style={{ backgroundColor: 'blue', color: 'white' }}>ロック解除</button>
+        <button onClick={handleRegister} style={{ backgroundColor: 'green', color: 'white', marginRight: '10px' }}>
+          パスキーを登録
+        </button>
         {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-        <button onClick={handleLock} style={{ backgroundColor: 'red', color: 'white' }}>ロック</button>
+        <button onClick={handleUnlock} style={{ backgroundColor: 'blue', color: 'white', marginRight: '10px' }}>
+          ロック解除
+        </button>
+        {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+        <button onClick={handleLock} style={{ backgroundColor: 'red', color: 'white', marginRight: '10px' }}>
+          ロック
+        </button>
       </div>
-      <div>
+      <div style={{ marginTop: '20px' }}>
         {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-        <button onClick={handleEncrypt} style={{ backgroundColor: 'blue', color: 'white' }}>データを暗号化</button>
+        <button onClick={handleEncrypt} style={{ backgroundColor: 'blue', color: 'white', marginRight: '10px' }}>
+          データを暗号化
+        </button>
         {/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-        <button onClick={handleDecrypt} style={{ backgroundColor: 'red', color: 'white' }}>データを復号化</button>
+        <button onClick={handleDecrypt} style={{ backgroundColor: 'red', color: 'white' }}>
+          データを復号化
+        </button>
       </div>
-      <div>
+      <div style={{ marginTop: '20px' }}>
         <p>{status}</p>
         {encrypted && <p>暗号化データ: {encrypted}</p>}
         {decrypted && <p>復号化データ: {decrypted}</p>}

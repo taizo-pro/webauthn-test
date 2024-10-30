@@ -1,5 +1,3 @@
-// encryption.ts
-
 /**
  * データを暗号化します。
  * @param data 暗号化するデータ
