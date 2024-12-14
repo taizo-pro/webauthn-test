@@ -40,7 +40,7 @@ export default function Home() {
 					challenge: new Uint8Array([1]),
 					rp: {
 						name: "WebAuthn Test",
-						id: "localhost",
+						id: window.location.hostname,
 					},
 					user: {
 						id: new Uint8Array(userIdArrayBuffer),
