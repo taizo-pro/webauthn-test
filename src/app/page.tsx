@@ -1,5 +1,24 @@
 "use client";
 
+// PRF拡張機能の型定義
+declare global {
+	interface AuthenticationExtensionsClientInputs {
+		prf?: {
+			eval: {
+				first: ArrayBuffer;
+			};
+		};
+	}
+
+	interface AuthenticationExtensionsClientOutputs {
+		prf?: {
+			results: {
+				first: ArrayBuffer;
+			};
+		};
+	}
+}
+
 export default function Home() {
 	// ユーティリティ関数
 	const hashToArrayBuffer = async (userId: string) => {
@@ -46,7 +65,9 @@ export default function Home() {
 			});
 
 			console.log("登録成功:", credential);
-			const extensionResults = (credential as PublicKeyCredential)?.getClientExtensionResults();
+			const extensionResults = (
+				credential as PublicKeyCredential
+			)?.getClientExtensionResults();
 			console.log("拡張機能の結果:", extensionResults);
 		} catch (err) {
 			console.error("登録エラー:", err);
@@ -71,7 +92,10 @@ export default function Home() {
 				},
 			});
 
-			const authExtensionResults = authCredential.getClientExtensionResults();
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			const authExtensionResults: any = (
+				authCredential as PublicKeyCredential
+			).getClientExtensionResults();
 			const inputKeyMaterial = new Uint8Array(
 				authExtensionResults.prf.results.first,
 			);
@@ -123,12 +147,14 @@ export default function Home() {
 		<div className="p-4">
 			<h2 className="text-xl font-bold mb-4">WebAuthnテスト🔐</h2>
 			<div className="space-y-4">
+				{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
 				<button
 					onClick={handleRegister}
 					className="bg-blue-500 text-white px-4 py-2 rounded w-full"
 				>
 					パスキー新規登録
 				</button>
+				{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
 				<button
 					onClick={handleAuthenticate}
 					className="bg-green-500 text-white px-4 py-2 rounded w-full"
