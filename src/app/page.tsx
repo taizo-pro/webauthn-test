@@ -26,8 +26,10 @@ export default function Home() {
 	const [registrationResult, setRegistrationResult] = useState<string>("");
 	const [signResult, setSignResult] = useState<string>("");
 	const [inputText, setInputText] = useState<string>("");
-	const [encryptedData, setEncryptedData] = useState<string>("");
-	const [decryptedData, setDecryptedData] = useState<string>("");
+	const [prfEncryptedData, setPrfEncryptedData] = useState<ArrayBuffer>();
+	const [prfKey, setPrfKey] = useState<CryptoKey>();
+	const [prfDecryptedData, setPrfDecryptedData] = useState<string>("");
+	const [nonce, setNonce] = useState<Uint8Array>();
 
 	// ユーティリティ関数
 	const hashToArrayBuffer = async (userId: string) => {
@@ -135,7 +137,7 @@ export default function Home() {
 		}
 	};
 
-	// パスキー認証と暗号化
+	// パスキーログイン
 	const handleAuthenticate = async () => {
 		try {
 			const authCredential = (await navigator.credentials.get({
@@ -180,7 +182,7 @@ export default function Home() {
 			const info = new TextEncoder().encode(label);
 			const salt = new Uint8Array();
 
-      // PRF対称鍵を導出する
+			// PRF対称鍵を導出する
 			const encryptionKey = await crypto.subtle.deriveKey(
 				{ name: "HKDF", info, salt, hash: "SHA-256" },
 				keyDerivationKey,
@@ -188,59 +190,101 @@ export default function Home() {
 				false,
 				["encrypt", "decrypt"],
 			);
-
-			// 暗号化処理
-			const nonce = crypto.getRandomValues(new Uint8Array(12));
-			const encrypted = await crypto.subtle.encrypt(
-				{ name: "AES-GCM", iv: nonce },
-				encryptionKey,
-				new TextEncoder().encode(inputText),
-			);
-
-			// Base64形式で表示用に変換
-			const encryptedBase64 = btoa(
-				String.fromCharCode(...new Uint8Array(encrypted)),
-			);
-			setEncryptedData(encryptedBase64);
-
-			// 復号化テスト
-			const decrypted = await crypto.subtle.decrypt(
-				{ name: "AES-GCM", iv: nonce },
-				encryptionKey,
-				encrypted,
-			);
-			setDecryptedData(new TextDecoder().decode(decrypted));
+			setPrfKey(encryptionKey);
 		} catch (err) {
 			console.error("認証エラー:", err);
 		}
+	};
+
+	// RSA秘密鍵の暗号化
+	const handleRSAEncrypt = async () => {
+		try {
+			// 乱数。パスキーごとに生成する。復号化時に必要であるためサーバーに保存する
+			const nonce = crypto.getRandomValues(new Uint8Array(12));
+			setNonce(nonce);
+			// 暗号化したいデータを暗号化する
+			const encrypted = await crypto.subtle.encrypt(
+				{ name: "AES-GCM", iv: nonce },
+				prfKey as CryptoKey,
+				// FIXME: 一旦inputTextを使っているが、RSA秘密鍵を暗号化する
+				new TextEncoder().encode(inputText),
+			);
+			setPrfEncryptedData(encrypted);
+		} catch (err) {
+			console.error("暗号化エラー:", err);
+		}
+	};
+
+	// RSA秘密鍵の復号化
+	const handleRSADecrypt = async () => {
+		await handleAuthenticate();
+		const decrypted = await crypto.subtle.decrypt(
+			// nonceは暗号化時に使用したものと同じでないと復号化できない
+			{ name: "AES-GCM", iv: nonce },
+			prfKey as CryptoKey,
+			// PRF暗号化済みRSA秘密鍵のこと
+			// 本来はサーバから取得してくる
+			prfEncryptedData as ArrayBuffer,
+		);
+		setPrfDecryptedData(new TextDecoder().decode(decrypted));
 	};
 
 	return (
 		<div className="p-4">
 			<h2 className="text-xl font-bold mb-4">WebAuthnテスト🔐</h2>
 			<div className="space-y-4">
-				{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-				<button
-					onClick={handleRegister}
-					className="bg-blue-500 text-white px-4 py-2 rounded w-full"
-				>
-					パスキー新規登録
-				</button>
-				<div className="space-y-2">
-					<textarea
-						value={inputText}
-						onChange={(e) => setInputText(e.target.value)}
-						placeholder="暗号化したいテキストを入力してください"
-						className="w-full p-2 border rounded text-black"
-						rows={3}
-					/>
-					{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-					<button
-						onClick={handleAuthenticate}
-						className="bg-green-500 text-white px-4 py-2 rounded w-full"
-					>
-						パスキーログインと暗号化
-					</button>
+				<div className="flex gap-4 w-full">
+					<div className="space-y-2 w-full">
+						{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+						<button
+							onClick={handleRegister}
+							className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+						>
+							パスキー新規登録
+						</button>
+					</div>
+					<div className="space-y-2 w-full">
+						{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+						<button
+							onClick={handleAuthenticate}
+							className="bg-green-500 text-white px-4 py-2 rounded w-full"
+						>
+							パスキーログイン
+						</button>
+					</div>
+				</div>
+
+				<div className="flex gap-4 w-full">
+					<div className="space-y-2 flex gap-4 w-full">
+						<input
+							type="text"
+							value={inputText}
+							onChange={(e) => setInputText(e.target.value)}
+							placeholder="暗号化したいテキストを入力してください"
+							className="w-[100%] p-2 border rounded text-black"
+						/>
+					</div>
+				</div>
+
+				<div className="flex gap-4 w-full">
+					<div className="space-y-2 flex gap-4 w-full">
+						{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+						<button
+							onClick={handleRSAEncrypt}
+							className="bg-purple-500 text-white px-4 py-2 rounded w-full"
+						>
+							暗号化
+						</button>
+					</div>
+					<div className="space-y-2 w-full">
+						{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+						<button
+							onClick={handleRSADecrypt}
+							className="bg-yellow-500 text-white px-4 py-2 rounded w-full"
+						>
+							復号化
+						</button>
+					</div>
 				</div>
 
 				<div className="flex">
@@ -255,9 +299,7 @@ export default function Home() {
 
 						{registrationResult && (
 							<div className="mt-4 p-4 rounded">
-								<h3 className="font-bold mb-2">
-									登録時の疑似乱数生成結果:
-								</h3>
+								<h3 className="font-bold mb-2">登録時の疑似乱数生成結果:</h3>
 								<pre className="whitespace-pre-wrap">{registrationResult}</pre>
 							</div>
 						)}
@@ -278,19 +320,20 @@ export default function Home() {
 							</div>
 						)}
 
-						{encryptedData && (
+						{prfEncryptedData && (
 							<div className="mt-4 p-4 rounded">
 								<h3 className="font-bold mb-2">暗号化結果</h3>
 								<pre className="whitespace-pre-wrap break-all">
-									{encryptedData}
+									{/* Base64形式で表示用に変換 */}
+									{btoa(String.fromCharCode(...new Uint8Array(prfEncryptedData)))}
 								</pre>
 							</div>
 						)}
 
-						{decryptedData && (
+						{prfDecryptedData && (
 							<div className="mt-4 p-4 rounded">
 								<h3 className="font-bold mb-2">復号化結果</h3>
-								<pre className="whitespace-pre-wrap">{decryptedData}</pre>
+								<pre className="whitespace-pre-wrap">{prfDecryptedData}</pre>
 							</div>
 						)}
 					</div>
