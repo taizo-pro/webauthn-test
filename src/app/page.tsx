@@ -32,18 +32,19 @@ export default function Home() {
 	const [nonce, setNonce] = useState<Uint8Array>();
 
 	// ユーティリティ関数
-	const hashToArrayBuffer = async (userId: string) => {
-		const data = new TextEncoder().encode(userId);
+	const hashToArrayBuffer = async (value: string) => {
+		const data = new TextEncoder().encode(value);
 		const hash = await crypto.subtle.digest("SHA-256", data);
 		return hash;
 	};
-
-	const prfSalt = new Uint8Array(new Array(32).fill(1)).buffer;
 
 	// パスキー登録
 	const handleRegister = async () => {
 		const userId = "00000000-0000-0000-0000-000000000001";
 		const userIdArrayBuffer = await hashToArrayBuffer(userId);
+		// ref. https://github.com/bitwarden/clients/blob/main/libs/common/src/auth/services/webauthn-login/webauthn-login-prf-key.service.ts#L9
+		const LoginWithPrfSalt = "passwordless-login";
+		const prfSalt = await hashToArrayBuffer(LoginWithPrfSalt);
 
 		try {
 			const pubKeyCredential = (await navigator.credentials.create({
@@ -139,6 +140,10 @@ export default function Home() {
 
 	// パスキーログイン
 	const handleAuthenticate = async () => {
+		// ref. https://github.com/bitwarden/clients/blob/main/libs/common/src/auth/services/webauthn-login/webauthn-login-prf-key.service.ts#L9
+		const LoginWithPrfSalt = "passwordless-login";
+		const prfSalt = await hashToArrayBuffer(LoginWithPrfSalt);
+
 		try {
 			const authCredential = (await navigator.credentials.get({
 				publicKey: {
@@ -296,11 +301,14 @@ export default function Home() {
 								<pre className="whitespace-pre-wrap">{extensionResults}</pre>
 							</div>
 						)}
-
+					</div>
+					<div>
 						{registrationResult && (
 							<div className="mt-4 p-4 rounded">
 								<h3 className="font-bold mb-2">登録時の疑似乱数生成結果:</h3>
-								<pre className="whitespace-pre-wrap">{registrationResult}</pre>
+								<details className="whitespace-pre-wrap">
+									{registrationResult}
+								</details>
 							</div>
 						)}
 					</div>
@@ -310,7 +318,7 @@ export default function Home() {
 								<h3 className="font-bold mb-2">
 									ログイン時の疑似乱数生成結果:
 								</h3>
-								<pre className="whitespace-pre-wrap">{signResult}</pre>
+								<details className="whitespace-pre-wrap">{signResult}</details>
 							</div>
 						)}
 						{inputText && (
@@ -325,7 +333,9 @@ export default function Home() {
 								<h3 className="font-bold mb-2">暗号化結果</h3>
 								<pre className="whitespace-pre-wrap break-all">
 									{/* Base64形式で表示用に変換 */}
-									{btoa(String.fromCharCode(...new Uint8Array(prfEncryptedData)))}
+									{btoa(
+										String.fromCharCode(...new Uint8Array(prfEncryptedData)),
+									)}
 								</pre>
 							</div>
 						)}
