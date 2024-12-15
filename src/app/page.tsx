@@ -105,12 +105,23 @@ export default function Home() {
 				},
 			});
 
-			console.log("登録成功:", credential);
+			console.log("パスキー登録成功:", credential);
 			const extensionResults = (
 				credential as PublicKeyCredential
 			)?.getClientExtensionResults();
+			console.log("PRF対応結果:", extensionResults);
 			setExtensionResults(JSON.stringify(extensionResults, null, 2));
-			setRegistrationResult(JSON.stringify(extensionResults?.prf?.results?.first, null, 2));
+			if (extensionResults?.prf?.results?.first) {
+				setRegistrationResult(
+					JSON.stringify(extensionResults.prf.results.first, null, 2),
+				);
+				console.log(
+					"登録結果:",
+					new Uint8Array(extensionResults.prf.results.first),
+				);
+			} else {
+				console.log("登録結果: undefined");
+			}
 		} catch (err) {
 			setExtensionResults(`エラーが発生しました: ${err}`);
 		}
