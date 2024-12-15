@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 // PRF拡張機能の型定義
 declare global {
 	interface AuthenticationExtensionsClientInputs {
@@ -20,6 +22,8 @@ declare global {
 }
 
 export default function Home() {
+	const [extensionResults, setExtensionResults] = useState<string>("");
+
 	// ユーティリティ関数
 	const hashToArrayBuffer = async (userId: string) => {
 		const data = new TextEncoder().encode(userId);
@@ -84,7 +88,7 @@ export default function Home() {
 
 					// PRF (Pseudo Random Function) 拡張機能
 					// 認証器から暗号鍵を導出するための設定
-          // ref. https://w3c.github.io/webauthn/#prf-extension
+					// ref. https://w3c.github.io/webauthn/#prf-extension
 					extensions: {
 						prf: {
 							// eval: 現在の認証器から直接鍵を導出
@@ -104,9 +108,9 @@ export default function Home() {
 			const extensionResults = (
 				credential as PublicKeyCredential
 			)?.getClientExtensionResults();
-			console.log("拡張機能の結果:", extensionResults);
+			setExtensionResults(JSON.stringify(extensionResults, null, 2));
 		} catch (err) {
-			console.error("登録エラー:", err);
+			setExtensionResults(`エラーが発生しました: ${err}`);
 		}
 	};
 
@@ -197,6 +201,14 @@ export default function Home() {
 				>
 					パスキーログイン
 				</button>
+
+				{/* 結果表示エリア */}
+				{extensionResults && (
+					<div className="mt-4 p-4 rounded">
+						<h3 className="font-bold mb-2">PRF対応結果:</h3>
+						<pre className="whitespace-pre-wrap">{extensionResults}</pre>
+					</div>
+				)}
 			</div>
 		</div>
 	);
