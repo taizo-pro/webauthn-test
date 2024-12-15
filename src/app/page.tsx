@@ -24,6 +24,7 @@ declare global {
 export default function Home() {
 	const [extensionResults, setExtensionResults] = useState<string>("");
 	const [registrationResult, setRegistrationResult] = useState<string>("");
+	const [signResult, setSignResult] = useState<string>("");
 	const [inputText, setInputText] = useState<string>("");
 	const [encryptedData, setEncryptedData] = useState<string>("");
 	const [decryptedData, setDecryptedData] = useState<string>("");
@@ -43,7 +44,7 @@ export default function Home() {
 		const userIdArrayBuffer = await hashToArrayBuffer(userId);
 
 		try {
-			const authCredential = await navigator.credentials.create({
+			const pubKeyCredential = (await navigator.credentials.create({
 				publicKey: {
 					// 署名の正当性を検証するためのランダムな文字列
 					// 攻撃者に入手されると公開鍵がすり替えられてしまうので、サーバで生成する
@@ -106,20 +107,29 @@ export default function Home() {
 						},
 					},
 				},
-			});
+			})) as PublicKeyCredential;
 
-			console.log("パスキー登録成功:", authCredential);
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			const authExtensionResults: any = (
-				authCredential as PublicKeyCredential
-			).getClientExtensionResults();
+			// AuthenticatorAttestationResponseとして型アサーション
+			const attestationResponse =
+				pubKeyCredential.response as AuthenticatorAttestationResponse;
+
+			// // attestationObjectから公開鍵情報を取得できます
+			// const attestationObject = attestationResponse.attestationObject;
+
+			// getPublicKeyを使用して公開鍵を取得
+			const publicKeyData = attestationResponse.getPublicKey();
+
+			console.log("パスキー登録成功:", pubKeyCredential);
+			const authExtensionResults = pubKeyCredential.getClientExtensionResults();
+			if (!authExtensionResults.prf) {
+				throw new Error("PRF拡張機能がサポートされていません");
+			}
 			const inputKeyMaterial = new Uint8Array(
 				authExtensionResults.prf.results.first,
 			);
 
 			setExtensionResults(JSON.stringify(authExtensionResults, null, 2));
 			setRegistrationResult(JSON.stringify(inputKeyMaterial, null, 2));
-			console.log("暗号化鍵:", inputKeyMaterial);
 		} catch (err) {
 			setExtensionResults(`エラーが発生しました: ${err}`);
 		}
@@ -128,7 +138,7 @@ export default function Home() {
 	// パスキー認証と暗号化
 	const handleAuthenticate = async () => {
 		try {
-			const authCredential = await navigator.credentials.get({
+			const authCredential = (await navigator.credentials.get({
 				publicKey: {
 					challenge: new Uint8Array([9, 0, 1, 2]),
 					rpId: window.location.hostname,
@@ -141,17 +151,18 @@ export default function Home() {
 						},
 					},
 				},
-			});
+			})) as PublicKeyCredential;
 
-			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-			const authExtensionResults: any = (
-				authCredential as PublicKeyCredential
-			).getClientExtensionResults();
+			const authExtensionResults = authCredential.getClientExtensionResults();
+			if (!authExtensionResults.prf) {
+				throw new Error("PRF拡張機能がサポートされていません");
+			}
 			const inputKeyMaterial = new Uint8Array(
 				authExtensionResults.prf.results.first,
 			);
+			setSignResult(JSON.stringify(inputKeyMaterial, null, 2));
 
-			// 鍵導出
+			// PRF対称鍵を作るための鍵を導出する
 			const keyDerivationKey = await crypto.subtle.importKey(
 				// 鍵のフォーマット (例: "raw", "pkcs8", "spki", "jwk")
 				"raw",
@@ -169,6 +180,7 @@ export default function Home() {
 			const info = new TextEncoder().encode(label);
 			const salt = new Uint8Array();
 
+      // PRF対称鍵を導出する
 			const encryptionKey = await crypto.subtle.deriveKey(
 				{ name: "HKDF", info, salt, hash: "SHA-256" },
 				keyDerivationKey,
@@ -243,18 +255,26 @@ export default function Home() {
 
 						{registrationResult && (
 							<div className="mt-4 p-4 rounded">
-								<h3 className="font-bold mb-2">登録結果:</h3>
+								<h3 className="font-bold mb-2">
+									登録時の疑似乱数生成結果:
+								</h3>
 								<pre className="whitespace-pre-wrap">{registrationResult}</pre>
 							</div>
 						)}
 					</div>
 					<div>
+						{signResult && (
+							<div className="mt-4 p-4 rounded">
+								<h3 className="font-bold mb-2">
+									ログイン時の疑似乱数生成結果:
+								</h3>
+								<pre className="whitespace-pre-wrap">{signResult}</pre>
+							</div>
+						)}
 						{inputText && (
 							<div className="mt-4 p-4 rounded">
 								<h3 className="font-bold mb-2">暗号化対象</h3>
-								<pre className="whitespace-pre-wrap break-all">
-									{inputText}
-								</pre>
+								<pre className="whitespace-pre-wrap break-all">{inputText}</pre>
 							</div>
 						)}
 
