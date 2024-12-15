@@ -24,6 +24,9 @@ declare global {
 export default function Home() {
 	const [extensionResults, setExtensionResults] = useState<string>("");
 	const [registrationResult, setRegistrationResult] = useState<string>("");
+	const [inputText, setInputText] = useState<string>("");
+	const [encryptedData, setEncryptedData] = useState<string>("");
+	const [decryptedData, setDecryptedData] = useState<string>("");
 
 	// ユーティリティ関数
 	const hashToArrayBuffer = async (userId: string) => {
@@ -174,15 +177,19 @@ export default function Home() {
 				["encrypt", "decrypt"],
 			);
 
-			// 暗号化テスト
+			// 暗号化処理
 			const nonce = crypto.getRandomValues(new Uint8Array(12));
-			const testData = "🕺🕺🕺🕺🕺🕺";
-			console.log("暗号化テストデータ:", testData);
 			const encrypted = await crypto.subtle.encrypt(
 				{ name: "AES-GCM", iv: nonce },
 				encryptionKey,
-				new TextEncoder().encode(testData),
+				new TextEncoder().encode(inputText),
 			);
+
+			// Base64形式で表示用に変換
+			const encryptedBase64 = btoa(
+				String.fromCharCode(...new Uint8Array(encrypted)),
+			);
+			setEncryptedData(encryptedBase64);
 
 			// 復号化テスト
 			const decrypted = await crypto.subtle.decrypt(
@@ -190,8 +197,7 @@ export default function Home() {
 				encryptionKey,
 				encrypted,
 			);
-
-			console.log("復号化結果:", new TextDecoder().decode(decrypted));
+			setDecryptedData(new TextDecoder().decode(decrypted));
 		} catch (err) {
 			console.error("認証エラー:", err);
 		}
@@ -208,28 +214,67 @@ export default function Home() {
 				>
 					パスキー新規登録
 				</button>
-				{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
-				<button
-					onClick={handleAuthenticate}
-					className="bg-green-500 text-white px-4 py-2 rounded w-full"
-				>
-					パスキーログイン
-				</button>
+				<div className="space-y-2">
+					<textarea
+						value={inputText}
+						onChange={(e) => setInputText(e.target.value)}
+						placeholder="暗号化したいテキストを入力してください"
+						className="w-full p-2 border rounded text-black"
+						rows={3}
+					/>
+					{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+					<button
+						onClick={handleAuthenticate}
+						className="bg-green-500 text-white px-4 py-2 rounded w-full"
+					>
+						パスキーログインと暗号化
+					</button>
+				</div>
 
-				{/* 結果表示エリア */}
-				{extensionResults && (
-					<div className="mt-4 p-4 rounded">
-						<h3 className="font-bold mb-2">PRF対応結果:</h3>
-						<pre className="whitespace-pre-wrap">{extensionResults}</pre>
-					</div>
-				)}
+				<div className="flex">
+					<div>
+						{/* 結果表示エリア */}
+						{extensionResults && (
+							<div className="mt-4 p-4 rounded">
+								<h3 className="font-bold mb-2">PRF対応結果:</h3>
+								<pre className="whitespace-pre-wrap">{extensionResults}</pre>
+							</div>
+						)}
 
-				{registrationResult && (
-					<div className="mt-4 p-4 rounded">
-						<h3 className="font-bold mb-2">登録結果:</h3>
-						<pre className="whitespace-pre-wrap">{registrationResult}</pre>
+						{registrationResult && (
+							<div className="mt-4 p-4 rounded">
+								<h3 className="font-bold mb-2">登録結果:</h3>
+								<pre className="whitespace-pre-wrap">{registrationResult}</pre>
+							</div>
+						)}
 					</div>
-				)}
+					<div>
+						{inputText && (
+							<div className="mt-4 p-4 rounded">
+								<h3 className="font-bold mb-2">暗号化対象</h3>
+								<pre className="whitespace-pre-wrap break-all">
+									{inputText}
+								</pre>
+							</div>
+						)}
+
+						{encryptedData && (
+							<div className="mt-4 p-4 rounded">
+								<h3 className="font-bold mb-2">暗号化結果</h3>
+								<pre className="whitespace-pre-wrap break-all">
+									{encryptedData}
+								</pre>
+							</div>
+						)}
+
+						{decryptedData && (
+							<div className="mt-4 p-4 rounded">
+								<h3 className="font-bold mb-2">復号化結果</h3>
+								<pre className="whitespace-pre-wrap">{decryptedData}</pre>
+							</div>
+						)}
+					</div>
+				</div>
 			</div>
 		</div>
 	);
