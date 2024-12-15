@@ -40,7 +40,7 @@ export default function Home() {
 		const userIdArrayBuffer = await hashToArrayBuffer(userId);
 
 		try {
-			const credential = await navigator.credentials.create({
+			const authCredential = await navigator.credentials.create({
 				publicKey: {
 					// 署名の正当性を検証するためのランダムな文字列
 					// 攻撃者に入手されると公開鍵がすり替えられてしまうので、サーバで生成する
@@ -105,23 +105,18 @@ export default function Home() {
 				},
 			});
 
-			console.log("パスキー登録成功:", credential);
-			const extensionResults = (
-				credential as PublicKeyCredential
-			)?.getClientExtensionResults();
-			console.log("PRF対応結果:", extensionResults);
-			setExtensionResults(JSON.stringify(extensionResults, null, 2));
-			if (extensionResults?.prf?.results?.first) {
-				setRegistrationResult(
-					JSON.stringify(extensionResults.prf.results.first, null, 2),
-				);
-				console.log(
-					"登録結果:",
-					new Uint8Array(extensionResults.prf.results.first),
-				);
-			} else {
-				console.log("登録結果: undefined");
-			}
+			console.log("パスキー登録成功:", authCredential);
+			// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+			const authExtensionResults: any = (
+				authCredential as PublicKeyCredential
+			).getClientExtensionResults();
+			const inputKeyMaterial = new Uint8Array(
+				authExtensionResults.prf.results.first,
+			);
+
+			setExtensionResults(JSON.stringify(authExtensionResults, null, 2));
+			setRegistrationResult(JSON.stringify(inputKeyMaterial, null, 2));
+			console.log("暗号化鍵:", inputKeyMaterial);
 		} catch (err) {
 			setExtensionResults(`エラーが発生しました: ${err}`);
 		}
@@ -133,7 +128,7 @@ export default function Home() {
 			const authCredential = await navigator.credentials.get({
 				publicKey: {
 					challenge: new Uint8Array([9, 0, 1, 2]),
-					rpId: "localhost",
+					rpId: window.location.hostname,
 					userVerification: "required",
 					extensions: {
 						prf: {
@@ -155,10 +150,15 @@ export default function Home() {
 
 			// 鍵導出
 			const keyDerivationKey = await crypto.subtle.importKey(
+				// 鍵のフォーマット (例: "raw", "pkcs8", "spki", "jwk")
 				"raw",
+				// 鍵のデータ
 				inputKeyMaterial,
+				// 鍵導出アルゴリズム（例: "AES-GCM", "HKDF"）
 				"HKDF",
+				// 鍵をエクスポート可能にするか (true または false)
 				false,
+				// 鍵の利用目的 (例: ["encrypt", "decrypt", "sign", "verify"])
 				["deriveKey"],
 			);
 
@@ -176,7 +176,8 @@ export default function Home() {
 
 			// 暗号化テスト
 			const nonce = crypto.getRandomValues(new Uint8Array(12));
-			const testData = "テスト秘密データ";
+			const testData = "🕺🕺🕺🕺🕺🕺";
+			console.log("暗号化テストデータ:", testData);
 			const encrypted = await crypto.subtle.encrypt(
 				{ name: "AES-GCM", iv: nonce },
 				encryptionKey,
