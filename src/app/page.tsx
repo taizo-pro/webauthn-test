@@ -23,6 +23,7 @@ declare global {
 
 export default function Home() {
 	const [extensionResults, setExtensionResults] = useState<string>("");
+	const [registrationResult, setRegistrationResult] = useState<string>("");
 
 	// ユーティリティ関数
 	const hashToArrayBuffer = async (userId: string) => {
@@ -109,6 +110,7 @@ export default function Home() {
 				credential as PublicKeyCredential
 			)?.getClientExtensionResults();
 			setExtensionResults(JSON.stringify(extensionResults, null, 2));
+			setRegistrationResult(JSON.stringify(extensionResults?.prf?.results?.first, null, 2));
 		} catch (err) {
 			setExtensionResults(`エラーが発生しました: ${err}`);
 		}
@@ -207,6 +209,13 @@ export default function Home() {
 					<div className="mt-4 p-4 rounded">
 						<h3 className="font-bold mb-2">PRF対応結果:</h3>
 						<pre className="whitespace-pre-wrap">{extensionResults}</pre>
+					</div>
+				)}
+
+				{registrationResult && (
+					<div className="mt-4 p-4 rounded">
+						<h3 className="font-bold mb-2">登録結果:</h3>
+						<pre className="whitespace-pre-wrap">{registrationResult}</pre>
 					</div>
 				)}
 			</div>
