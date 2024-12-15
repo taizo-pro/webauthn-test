@@ -235,104 +235,98 @@ export default function Home() {
 	};
 
 	return (
-		<div className="p-4">
-			<h2 className="text-xl font-bold mb-4">WebAuthnテスト🔐</h2>
-			<div className="space-y-4">
-				<div className="flex gap-4 w-full">
-					<div className="space-y-2 w-full">
-						{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+		<div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+			<div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
+				<h2 className="text-2xl font-bold text-center mb-6 text-indigo-600">
+					WebAuthnテスト🔐
+				</h2>
+				<div className="space-y-4">
+					<div className="flex flex-col sm:flex-row gap-4">
 						<button
+							type="button"
 							onClick={handleRegister}
-							className="bg-blue-500 text-white px-4 py-2 rounded w-full"
+							className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-indigo-500"
 						>
 							パスキー新規登録
 						</button>
-					</div>
-					<div className="space-y-2 w-full">
-						{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
 						<button
+							type="button"
 							onClick={handleAuthenticate}
-							className="bg-green-500 text-white px-4 py-2 rounded w-full"
+							className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-teal-500"
 						>
 							パスキーログイン
 						</button>
 					</div>
-				</div>
 
-				<div className="flex gap-4 w-full">
-					<div className="space-y-2 flex gap-4 w-full">
-						<input
-							type="text"
-							value={inputText}
-							onChange={(e) => setInputText(e.target.value)}
-							placeholder="暗号化したいテキストを入力してください"
-							className="w-[100%] p-2 border rounded text-black"
-						/>
-					</div>
-				</div>
+					<input
+						type="text"
+						value={inputText}
+						onChange={(e) => setInputText(e.target.value)}
+						placeholder="暗号化したいテキストを入力してください"
+						className="w-full p-3 border rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+					/>
 
-				<div className="flex gap-4 w-full">
-					<div className="space-y-2 flex gap-4 w-full">
-						{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
+					<div className="flex flex-col sm:flex-row gap-4">
 						<button
+							type="button"
 							onClick={handleRSAEncrypt}
-							className="bg-purple-500 text-white px-4 py-2 rounded w-full"
+							className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-purple-500"
 						>
 							暗号化
 						</button>
-					</div>
-					<div className="space-y-2 w-full">
-						{/* biome-ignore lint/a11y/useButtonType: <explanation> */}
 						<button
+							type="button"
 							onClick={handleRSADecrypt}
-							className="bg-yellow-500 text-white px-4 py-2 rounded w-full"
+							className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-yellow-400"
 						>
 							復号化
 						</button>
 					</div>
-				</div>
 
-				<div className="flex">
-					<div>
-						{/* 結果表示エリア */}
+					<div className="space-y-4">
 						{extensionResults && (
-							<div className="mt-4 p-4 rounded">
-								<h3 className="font-bold mb-2">PRF対応結果:</h3>
-								<pre className="whitespace-pre-wrap">{extensionResults}</pre>
+							<div className="bg-gray-50 p-3 rounded border">
+								<h3 className="font-semibold text-gray-700 mb-1">
+									PRF対応結果:
+								</h3>
+								<pre className="whitespace-pre-wrap text-sm text-gray-600">
+									{extensionResults}
+								</pre>
 							</div>
 						)}
-					</div>
-					<div>
 						{registrationResult && (
-							<div className="mt-4 p-4 rounded">
-								<h3 className="font-bold mb-2">登録時の疑似乱数生成結果:</h3>
-								<details className="whitespace-pre-wrap">
+							<div className="bg-gray-50 p-3 rounded border">
+								<h3 className="font-semibold text-gray-700 mb-1">
+									登録時の疑似乱数生成結果:
+								</h3>
+								<details className="whitespace-pre-wrap text-sm text-gray-600">
 									{registrationResult}
 								</details>
 							</div>
 						)}
-					</div>
-					<div>
 						{signResult && (
-							<div className="mt-4 p-4 rounded">
-								<h3 className="font-bold mb-2">
+							<div className="bg-gray-50 p-3 rounded border">
+								<h3 className="font-semibold text-gray-700 mb-1">
 									ログイン時の疑似乱数生成結果:
 								</h3>
-								<details className="whitespace-pre-wrap">{signResult}</details>
+								<details className="whitespace-pre-wrap text-sm text-gray-600">
+									{signResult}
+								</details>
 							</div>
 						)}
 						{inputText && (
-							<div className="mt-4 p-4 rounded">
-								<h3 className="font-bold mb-2">暗号化対象</h3>
-								<pre className="whitespace-pre-wrap break-all">{inputText}</pre>
+							<div className="bg-gray-50 p-3 rounded border">
+								<h3 className="font-semibold text-gray-700 mb-1">暗号化対象</h3>
+								<pre className="whitespace-pre-wrap break-words text-sm text-gray-600">
+									{inputText}
+								</pre>
 							</div>
 						)}
 
 						{prfEncryptedData && (
-							<div className="mt-4 p-4 rounded">
-								<h3 className="font-bold mb-2">暗号化結果</h3>
-								<pre className="whitespace-pre-wrap break-all">
-									{/* Base64形式で表示用に変換 */}
+							<div className="bg-gray-50 p-3 rounded border">
+								<h3 className="font-semibold text-gray-700 mb-1">暗号化結果</h3>
+								<pre className="whitespace-pre-wrap break-words text-sm text-gray-600">
 									{btoa(
 										String.fromCharCode(...new Uint8Array(prfEncryptedData)),
 									)}
@@ -341,9 +335,11 @@ export default function Home() {
 						)}
 
 						{prfDecryptedData && (
-							<div className="mt-4 p-4 rounded">
-								<h3 className="font-bold mb-2">復号化結果</h3>
-								<pre className="whitespace-pre-wrap">{prfDecryptedData}</pre>
+							<div className="bg-gray-50 p-3 rounded border">
+								<h3 className="font-semibold text-gray-700 mb-1">復号化結果</h3>
+								<pre className="whitespace-pre-wrap text-sm text-gray-600">
+									{prfDecryptedData}
+								</pre>
 							</div>
 						)}
 					</div>
