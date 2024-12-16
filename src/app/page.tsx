@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import useDeriveRSAKey from "./hooks/useDeriveRSAKey";
 
 // PRF拡張機能の型定義
 declare global {
@@ -26,10 +27,12 @@ export default function Home() {
 	const [registrationResult, setRegistrationResult] = useState<string>("");
 	const [signResult, setSignResult] = useState<string>("");
 	const [inputText, setInputText] = useState<string>("");
-	const [prfEncryptedData, setPrfEncryptedData] = useState<ArrayBuffer>();
-	const [prfKey, setPrfKey] = useState<CryptoKey>();
-	const [prfDecryptedData, setPrfDecryptedData] = useState<string>("");
+	const [encryptedRSAPrivateKeyByPrfKey, setEncryptedRSAPrivateKeyByPrfKey] =
+		useState<ArrayBuffer>();
+	const [decryptedRSAPrivateKeyByPrfKey, setDecryptedRSAPrivateKeyByPrfKey] =
+		useState<ArrayBuffer>();
 	const [nonce, setNonce] = useState<Uint8Array>();
+	const { generateRSAKeyPair, publicRSAKeyBase64 } = useDeriveRSAKey();
 
 	// ユーティリティ関数
 	const hashToArrayBuffer = async (value: string) => {
@@ -133,6 +136,42 @@ export default function Home() {
 
 			setExtensionResults(JSON.stringify(authExtensionResults, null, 2));
 			setRegistrationResult(JSON.stringify(inputKeyMaterial, null, 2));
+
+			// RSA鍵ペアを生成
+			const { publicRSAKeyBase64, privateRSAKeyBase64 } =
+				await generateRSAKeyPair();
+			console.log("平文RSA公開鍵:", publicRSAKeyBase64);
+			console.log("暗号化前RSA秘密鍵:", privateRSAKeyBase64);
+
+			// PRF対称鍵を作るための鍵を導出する
+			const keyDerivationKey = await crypto.subtle.importKey(
+				// 鍵のフォーマット (例: "raw", "pkcs8", "spki", "jwk")
+				"raw",
+				// 鍵のデータ
+				inputKeyMaterial,
+				// 鍵導出アルゴリズム（例: "AES-GCM", "HKDF"）
+				"HKDF",
+				// 鍵をエクスポート可能にするか (true または false)
+				false,
+				// 鍵の利用目的 (例: ["encrypt", "decrypt", "sign", "verify"])
+				["deriveKey"],
+			);
+
+			const label = "encryption key";
+			const info = new TextEncoder().encode(label);
+			const salt = new Uint8Array();
+
+			// PRF対称鍵を導出する
+			const prfKey = await crypto.subtle.deriveKey(
+				{ name: "HKDF", info, salt, hash: "SHA-256" },
+				keyDerivationKey,
+				{ name: "AES-GCM", length: 256 },
+				false,
+				["encrypt", "decrypt"],
+			);
+
+			// PRF対称鍵でRSA秘密鍵を暗号化する
+			handleRSAPrivateKeyEncrypt(prfKey, privateRSAKeyBase64);
 		} catch (err) {
 			setExtensionResults(`エラーが発生しました: ${err}`);
 		}
@@ -169,6 +208,17 @@ export default function Home() {
 			);
 			setSignResult(JSON.stringify(inputKeyMaterial, null, 2));
 
+			// RSA鍵ペアを生成
+			console.log("平文RSA公開鍵:", publicRSAKeyBase64);
+			console.log(
+				"暗号化済みRSA秘密鍵:",
+				btoa(
+					String.fromCharCode(
+						...new Uint8Array(encryptedRSAPrivateKeyByPrfKey ?? []),
+					),
+				),
+			);
+
 			// PRF対称鍵を作るための鍵を導出する
 			const keyDerivationKey = await crypto.subtle.importKey(
 				// 鍵のフォーマット (例: "raw", "pkcs8", "spki", "jwk")
@@ -188,50 +238,60 @@ export default function Home() {
 			const salt = new Uint8Array();
 
 			// PRF対称鍵を導出する
-			const encryptionKey = await crypto.subtle.deriveKey(
+			const prfKey = await crypto.subtle.deriveKey(
 				{ name: "HKDF", info, salt, hash: "SHA-256" },
 				keyDerivationKey,
 				{ name: "AES-GCM", length: 256 },
 				false,
 				["encrypt", "decrypt"],
 			);
-			setPrfKey(encryptionKey);
+
+			if (!encryptedRSAPrivateKeyByPrfKey) {
+				throw new Error("暗号化済みRSA秘密鍵がありません");
+			}
+			handleRSAPrivateKeyDecrypt(prfKey, encryptedRSAPrivateKeyByPrfKey);
 		} catch (err) {
 			console.error("認証エラー:", err);
 		}
 	};
 
-	// RSA秘密鍵の暗号化
-	const handleRSAEncrypt = async () => {
+	// PRF対称鍵で、RSA秘密鍵の暗号化
+	const handleRSAPrivateKeyEncrypt = async (
+		prfKey: CryptoKey,
+		RSAPrivateKey: string,
+	) => {
 		try {
 			// 乱数。パスキーごとに生成する。復号化時に必要であるためサーバーに保存する
 			const nonce = crypto.getRandomValues(new Uint8Array(12));
 			setNonce(nonce);
-			// 暗号化したいデータを暗号化する
-			const encrypted = await crypto.subtle.encrypt(
+			// RSA秘密鍵を暗号化する
+			const encryptedRSAPrivateKey = await crypto.subtle.encrypt(
 				{ name: "AES-GCM", iv: nonce },
-				prfKey as CryptoKey,
-				// FIXME: 一旦inputTextを使っているが、RSA秘密鍵を暗号化する
-				new TextEncoder().encode(inputText),
+				prfKey,
+				new TextEncoder().encode(RSAPrivateKey),
 			);
-			setPrfEncryptedData(encrypted);
+			setEncryptedRSAPrivateKeyByPrfKey(encryptedRSAPrivateKey);
 		} catch (err) {
 			console.error("暗号化エラー:", err);
 		}
 	};
 
-	// RSA秘密鍵の復号化
-	const handleRSADecrypt = async () => {
-		await handleAuthenticate();
-		const decrypted = await crypto.subtle.decrypt(
+	// PRF対称鍵で、暗号化されたRSA秘密鍵の復号化
+	const handleRSAPrivateKeyDecrypt = async (
+		prfKey: CryptoKey,
+		encryptedRSAPrivateKeyByPrfKey: ArrayBuffer,
+	) => {
+		const decryptedRSAPrivateKey = await crypto.subtle.decrypt(
 			// nonceは暗号化時に使用したものと同じでないと復号化できない
 			{ name: "AES-GCM", iv: nonce },
-			prfKey as CryptoKey,
-			// PRF暗号化済みRSA秘密鍵のこと
+			prfKey,
 			// 本来はサーバから取得してくる
-			prfEncryptedData as ArrayBuffer,
+			encryptedRSAPrivateKeyByPrfKey,
 		);
-		setPrfDecryptedData(new TextDecoder().decode(decrypted));
+		console.log(
+			"復号化済みRSA秘密鍵:", new TextDecoder().decode(decryptedRSAPrivateKey),
+		);
+		setDecryptedRSAPrivateKeyByPrfKey(decryptedRSAPrivateKey);
 	};
 
 	return (
@@ -247,7 +307,7 @@ export default function Home() {
 							onClick={handleRegister}
 							className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-indigo-500"
 						>
-							パスキー新規登録
+							パスキー新規登録とPRF暗号化済RSA秘密鍵生成
 						</button>
 						<button
 							type="button"
@@ -266,10 +326,10 @@ export default function Home() {
 						className="w-full p-3 border rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 					/>
 
-					<div className="flex flex-col sm:flex-row gap-4">
+					{/* <div className="flex flex-col sm:flex-row gap-4">
 						<button
 							type="button"
-							onClick={handleRSAEncrypt}
+							onClick={handleRSAPrivateKeyEncrypt}
 							className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-purple-500"
 						>
 							暗号化
@@ -281,7 +341,7 @@ export default function Home() {
 						>
 							復号化
 						</button>
-					</div>
+					</div> */}
 
 					<div className="space-y-4">
 						{extensionResults && (
@@ -323,22 +383,28 @@ export default function Home() {
 							</div>
 						)}
 
-						{prfEncryptedData && (
+						{encryptedRSAPrivateKeyByPrfKey && (
 							<div className="bg-gray-50 p-3 rounded border">
-								<h3 className="font-semibold text-gray-700 mb-1">暗号化結果</h3>
+								<h3 className="font-semibold text-gray-700 mb-1">
+									PRF対称鍵で暗号化したRSA秘密鍵
+								</h3>
 								<pre className="whitespace-pre-wrap break-words text-sm text-gray-600">
 									{btoa(
-										String.fromCharCode(...new Uint8Array(prfEncryptedData)),
+										String.fromCharCode(
+											...new Uint8Array(encryptedRSAPrivateKeyByPrfKey),
+										),
 									)}
 								</pre>
 							</div>
 						)}
 
-						{prfDecryptedData && (
+						{decryptedRSAPrivateKeyByPrfKey && (
 							<div className="bg-gray-50 p-3 rounded border">
-								<h3 className="font-semibold text-gray-700 mb-1">復号化結果</h3>
+								<h3 className="font-semibold text-gray-700 mb-1">
+									PRF対称鍵で復号化したRSA秘密鍵
+								</h3>
 								<pre className="whitespace-pre-wrap text-sm text-gray-600">
-									{prfDecryptedData}
+									{new TextDecoder().decode(decryptedRSAPrivateKeyByPrfKey)}
 								</pre>
 							</div>
 						)}
