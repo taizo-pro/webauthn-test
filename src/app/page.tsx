@@ -307,7 +307,7 @@ export default function Home() {
 							onClick={handleRegister}
 							className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-indigo-500"
 						>
-							パスキー新規登録とPRF暗号化済RSA秘密鍵生成
+							パスキー新規登録<br />暗号化済RSA秘密鍵生成
 						</button>
 						<button
 							type="button"
@@ -320,9 +320,11 @@ export default function Home() {
 
 					<input
 						type="text"
+						disabled
 						value={inputText}
 						onChange={(e) => setInputText(e.target.value)}
-						placeholder="暗号化したいテキストを入力してください"
+						placeholder="Coming Soon..."
+						// placeholder="暗号化したい値を入力してください"
 						className="w-full p-3 border rounded text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 					/>
 
