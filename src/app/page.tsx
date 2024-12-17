@@ -289,7 +289,8 @@ export default function Home() {
 			encryptedRSAPrivateKeyByPrfKey,
 		);
 		console.log(
-			"復号化済みRSA秘密鍵:", new TextDecoder().decode(decryptedRSAPrivateKey),
+			"復号化済みRSA秘密鍵:",
+			new TextDecoder().decode(decryptedRSAPrivateKey),
 		);
 		setDecryptedRSAPrivateKeyByPrfKey(decryptedRSAPrivateKey);
 	};
@@ -307,7 +308,9 @@ export default function Home() {
 							onClick={handleRegister}
 							className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-indigo-500"
 						>
-							パスキー新規登録<br />暗号化済RSA秘密鍵生成
+							パスキー新規登録
+							<br />
+							暗号化済RSA秘密鍵生成
 						</button>
 						<button
 							type="button"
@@ -390,13 +393,13 @@ export default function Home() {
 								<h3 className="font-semibold text-gray-700 mb-1">
 									PRF対称鍵で暗号化したRSA秘密鍵
 								</h3>
-								<pre className="whitespace-pre-wrap break-words text-sm text-gray-600">
+								<details className="whitespace-pre-wrap break-words text-sm text-gray-600">
 									{btoa(
 										String.fromCharCode(
 											...new Uint8Array(encryptedRSAPrivateKeyByPrfKey),
 										),
 									)}
-								</pre>
+								</details>
 							</div>
 						)}
 
@@ -405,9 +408,9 @@ export default function Home() {
 								<h3 className="font-semibold text-gray-700 mb-1">
 									PRF対称鍵で復号化したRSA秘密鍵
 								</h3>
-								<pre className="whitespace-pre-wrap text-sm text-gray-600">
+								<details className="whitespace-pre-wrap text-sm text-gray-600">
 									{new TextDecoder().decode(decryptedRSAPrivateKeyByPrfKey)}
-								</pre>
+								</details>
 							</div>
 						)}
 					</div>
