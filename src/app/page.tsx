@@ -15,6 +15,7 @@ declare global {
 
 	interface AuthenticationExtensionsClientOutputs {
 		prf?: {
+			enabled: boolean;
 			results: {
 				first: ArrayBuffer;
 			};
@@ -23,16 +24,17 @@ declare global {
 }
 
 export default function Home() {
-	const [extensionResults, setExtensionResults] = useState<string>("");
+	const [isPrfExtensionResults, setPrfIsExtensionResults] = useState<boolean>();
 	const [registrationResult, setRegistrationResult] = useState<string>("");
-	const [signResult, setSignResult] = useState<string>("");
+	const [loginResult, setLoginResult] = useState<string>("");
 	const [inputText, setInputText] = useState<string>("");
 	const [encryptedRSAPrivateKeyByPrfKey, setEncryptedRSAPrivateKeyByPrfKey] =
 		useState<ArrayBuffer>();
 	const [decryptedRSAPrivateKeyByPrfKey, setDecryptedRSAPrivateKeyByPrfKey] =
 		useState<ArrayBuffer>();
 	const [nonce, setNonce] = useState<Uint8Array>();
-	const { generateRSAKeyPair, publicRSAKeyBase64 } = useDeriveRSAKey();
+	const { generateRSAKeyPair, publicRSAKeyBase64, privateRSAKeyBase64 } =
+		useDeriveRSAKey();
 
 	// ユーティリティ関数
 	const hashToArrayBuffer = async (value: string) => {
@@ -134,7 +136,7 @@ export default function Home() {
 				authExtensionResults.prf.results.first,
 			);
 
-			setExtensionResults(JSON.stringify(authExtensionResults, null, 2));
+			setPrfIsExtensionResults(authExtensionResults.prf.enabled);
 			setRegistrationResult(JSON.stringify(inputKeyMaterial, null, 2));
 
 			// RSA鍵ペアを生成
@@ -173,7 +175,7 @@ export default function Home() {
 			// PRF対称鍵でRSA秘密鍵を暗号化する
 			handleRSAPrivateKeyEncrypt(prfKey, privateRSAKeyBase64);
 		} catch (err) {
-			setExtensionResults(`エラーが発生しました: ${err}`);
+			setPrfIsExtensionResults(false);
 		}
 	};
 
@@ -206,7 +208,7 @@ export default function Home() {
 			const inputKeyMaterial = new Uint8Array(
 				authExtensionResults.prf.results.first,
 			);
-			setSignResult(JSON.stringify(inputKeyMaterial, null, 2));
+			setLoginResult(JSON.stringify(inputKeyMaterial, null, 2));
 
 			// RSA鍵ペアを生成
 			console.log("平文RSA公開鍵:", publicRSAKeyBase64);
@@ -349,34 +351,26 @@ export default function Home() {
 					</div> */}
 
 					<div className="space-y-4">
-						{extensionResults && (
+						{isPrfExtensionResults && (
 							<div className="bg-gray-50 p-3 rounded border">
 								<h3 className="font-semibold text-gray-700 mb-1">
 									PRF対応結果:
 								</h3>
 								<pre className="whitespace-pre-wrap text-sm text-gray-600">
-									{extensionResults}
+									{isPrfExtensionResults ? "⭕️" : "❌"}
 								</pre>
 							</div>
 						)}
 						{registrationResult && (
 							<div className="bg-gray-50 p-3 rounded border">
 								<h3 className="font-semibold text-gray-700 mb-1">
-									登録時の疑似乱数生成結果:
+									生成された疑似乱数が登録時とログイン時で一致しているか:
 								</h3>
-								<details className="whitespace-pre-wrap text-sm text-gray-600">
-									{registrationResult}
-								</details>
-							</div>
-						)}
-						{signResult && (
-							<div className="bg-gray-50 p-3 rounded border">
-								<h3 className="font-semibold text-gray-700 mb-1">
-									ログイン時の疑似乱数生成結果:
-								</h3>
-								<details className="whitespace-pre-wrap text-sm text-gray-600">
-									{signResult}
-								</details>
+								<pre className="whitespace-pre-wrap text-sm text-gray-600">
+									{registrationResult === loginResult
+										? "⭕️"
+										: "❌"}
+								</pre>
 							</div>
 						)}
 						{inputText && (
