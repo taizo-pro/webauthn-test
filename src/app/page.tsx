@@ -307,7 +307,7 @@ export default function Home() {
 					WebAuthnのPRF拡張機能を使用して、RSA秘密鍵を暗号化/復号化するテストです。
 				</p>
 				<div className="space-y-4">
-					<div className="flex flex-col sm:flex-row gap-4">
+					<div className="flex-col sm:flex-row gap-4 space-y-2">
 						<button
 							type="button"
 							onClick={handleRegister}
