@@ -300,15 +300,18 @@ export default function Home() {
 	return (
 		<div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
 			<div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
-				<h2 className="text-2xl font-bold text-center mb-6 text-indigo-600">
+				<h2 className="text-2xl font-bold text-center bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-6">
 					WebAuthnテスト🔐
 				</h2>
+				<p className="text-center text-gray-500 mb-6">
+					WebAuthnのPRF拡張機能を使用して、RSA秘密鍵を暗号化/復号化するテストです。
+				</p>
 				<div className="space-y-4">
 					<div className="flex flex-col sm:flex-row gap-4">
 						<button
 							type="button"
 							onClick={handleRegister}
-							className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-indigo-500"
+							className="w-full text-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 transition-all duration-300 py-2 px-4 rounded-lg text-white font-semibold"
 						>
 							パスキー新規登録
 							<br />
@@ -317,7 +320,7 @@ export default function Home() {
 						<button
 							type="button"
 							onClick={handleAuthenticate}
-							className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded shadow focus:outline-none focus:ring-2 focus:ring-teal-500"
+							className="w-full text-lg h-12 border-2 border-purple-500 text-purple-700 hover:bg-purple-50 transition-all duration-300 py-2 px-4 rounded-lg"
 						>
 							パスキーログイン
 						</button>
@@ -380,37 +383,39 @@ export default function Home() {
 							</div>
 						)}
 
-						{decryptedRSAPrivateKeyByPrfKey && encryptedRSAPrivateKeyByPrfKey && (
-							<div className="bg-gray-50 p-3 rounded border">
-								<h3 className="font-semibold text-gray-700 mb-1">
-									暗号前と復号化後のRSA秘密鍵が一致しているか:
-								</h3>
-								<pre className="whitespace-pre-wrap text-sm text-gray-600">
-									{new TextDecoder().decode(decryptedRSAPrivateKeyByPrfKey) ===
-									privateRSAKeyBase64
-										? "⭕️"
-										: "❌"}
-								</pre>
-								<details className="whitespace-pre-wrap text-sm text-gray-600">
-									<summary>暗号化前のRSA秘密鍵</summary>
-									{privateRSAKeyBase64}
-								</details>
-								<br />
-								<details className="whitespace-pre-wrap text-sm text-gray-600">
-									<summary>暗号化後のRSA秘密鍵</summary>
-									{btoa(
-										String.fromCharCode(
-											...new Uint8Array(encryptedRSAPrivateKeyByPrfKey),
-										),
-									)}
-								</details>
-								<br />
-								<details className="whitespace-pre-wrap text-sm text-gray-600">
-									<summary>復号化後のRSA秘密鍵</summary>
-									{new TextDecoder().decode(decryptedRSAPrivateKeyByPrfKey)}
-								</details>
-							</div>
-						)}
+						{decryptedRSAPrivateKeyByPrfKey &&
+							encryptedRSAPrivateKeyByPrfKey && (
+								<div className="bg-gray-50 p-3 rounded border">
+									<h3 className="font-semibold text-gray-700 mb-1">
+										暗号前と復号化後のRSA秘密鍵が一致しているか:
+									</h3>
+									<pre className="whitespace-pre-wrap text-sm text-gray-600">
+										{new TextDecoder().decode(
+											decryptedRSAPrivateKeyByPrfKey,
+										) === privateRSAKeyBase64
+											? "⭕️"
+											: "❌"}
+									</pre>
+									<details className="whitespace-pre-wrap text-sm text-gray-600">
+										<summary>暗号化前のRSA秘密鍵</summary>
+										{privateRSAKeyBase64}
+									</details>
+									<br />
+									<details className="whitespace-pre-wrap text-sm text-gray-600">
+										<summary>暗号化後のRSA秘密鍵</summary>
+										{btoa(
+											String.fromCharCode(
+												...new Uint8Array(encryptedRSAPrivateKeyByPrfKey),
+											),
+										)}
+									</details>
+									<br />
+									<details className="whitespace-pre-wrap text-sm text-gray-600">
+										<summary>復号化後のRSA秘密鍵</summary>
+										{new TextDecoder().decode(decryptedRSAPrivateKeyByPrfKey)}
+									</details>
+								</div>
+							)}
 					</div>
 				</div>
 			</div>
