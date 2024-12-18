@@ -367,9 +367,7 @@ export default function Home() {
 									生成された疑似乱数が登録時とログイン時で一致しているか:
 								</h3>
 								<pre className="whitespace-pre-wrap text-sm text-gray-600">
-									{registrationResult === loginResult
-										? "⭕️"
-										: "❌"}
+									{registrationResult === loginResult ? "⭕️" : "❌"}
 								</pre>
 							</div>
 						)}
@@ -382,27 +380,33 @@ export default function Home() {
 							</div>
 						)}
 
-						{encryptedRSAPrivateKeyByPrfKey && (
+						{decryptedRSAPrivateKeyByPrfKey && encryptedRSAPrivateKeyByPrfKey && (
 							<div className="bg-gray-50 p-3 rounded border">
 								<h3 className="font-semibold text-gray-700 mb-1">
-									PRF対称鍵で暗号化したRSA秘密鍵
+									暗号前と復号化後のRSA秘密鍵が一致しているか:
 								</h3>
-								<details className="whitespace-pre-wrap break-words text-sm text-gray-600">
+								<pre className="whitespace-pre-wrap text-sm text-gray-600">
+									{new TextDecoder().decode(decryptedRSAPrivateKeyByPrfKey) ===
+									privateRSAKeyBase64
+										? "⭕️"
+										: "❌"}
+								</pre>
+								<details className="whitespace-pre-wrap text-sm text-gray-600">
+									<summary>暗号化前のRSA秘密鍵</summary>
+									{privateRSAKeyBase64}
+								</details>
+								<br />
+								<details className="whitespace-pre-wrap text-sm text-gray-600">
+									<summary>暗号化後のRSA秘密鍵</summary>
 									{btoa(
 										String.fromCharCode(
 											...new Uint8Array(encryptedRSAPrivateKeyByPrfKey),
 										),
 									)}
 								</details>
-							</div>
-						)}
-
-						{decryptedRSAPrivateKeyByPrfKey && (
-							<div className="bg-gray-50 p-3 rounded border">
-								<h3 className="font-semibold text-gray-700 mb-1">
-									PRF対称鍵で復号化したRSA秘密鍵
-								</h3>
+								<br />
 								<details className="whitespace-pre-wrap text-sm text-gray-600">
+									<summary>復号化後のRSA秘密鍵</summary>
 									{new TextDecoder().decode(decryptedRSAPrivateKeyByPrfKey)}
 								</details>
 							</div>
