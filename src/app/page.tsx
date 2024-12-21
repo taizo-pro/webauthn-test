@@ -24,7 +24,8 @@ declare global {
 }
 
 export default function Home() {
-	const [isPrfExtensionResults, setPrfIsExtensionResults] = useState<boolean>(false);
+	const [isPrfExtensionResults, setPrfIsExtensionResults] =
+		useState<boolean | undefined>(undefined);
 	const [registrationResult, setRegistrationResult] = useState<string>("");
 	const [loginResult, setLoginResult] = useState<string>("");
 	const [inputText, setInputText] = useState<string>("");
@@ -358,7 +359,7 @@ export default function Home() {
 					</div> */}
 
 					<div className="space-y-4">
-						{isPrfExtensionResults && (
+						{isPrfExtensionResults !== undefined && (
 							<div className="bg-gray-50 p-3 rounded border">
 								<h3 className="font-semibold text-gray-700 mb-1">
 									PRF対応結果:
