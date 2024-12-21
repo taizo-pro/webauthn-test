@@ -84,8 +84,12 @@ export default function Home() {
 					// typeは"public-key"固定
 					// ref. https://developer.mozilla.org/ja/docs/Web/API/CredentialsContainer/create#pubkeycredparams
 					pubKeyCredParams: [
+						// EdDSA
 						{ alg: -8, type: "public-key" },
+						// ES256 - ECDSA with SHA-256
 						{ alg: -7, type: "public-key" },
+						// RS256 - RSASSA-PKCS1-v1_5 with SHA-256
+						{ alg: -257, type: "public-key" },
 					],
 
 					// 認証器の選択基準を指定する
