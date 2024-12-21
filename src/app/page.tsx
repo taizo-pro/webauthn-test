@@ -24,7 +24,7 @@ declare global {
 }
 
 export default function Home() {
-	const [isPrfExtensionResults, setPrfIsExtensionResults] = useState<boolean>();
+	const [isPrfExtensionResults, setPrfIsExtensionResults] = useState<boolean>(false);
 	const [registrationResult, setRegistrationResult] = useState<string>("");
 	const [loginResult, setLoginResult] = useState<string>("");
 	const [inputText, setInputText] = useState<string>("");
